@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Presensi – MEKANIK EXTRUDER & UTILITY</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --blue:#1565c0;--blue-dk:#0d47a1;--blue-lt:#e3f0ff;
+  --green:#2e7d32;--green-bg:#e8f5e9;--green-bd:#66bb6a;
+  --red:#c62828;--red-bg:#fce4ec;--red-bd:#ef5350;
+  --ylw:#e65100;--ylw-bg:#fff8e1;--ylw-bd:#ffa726;
+  --pur:#6a1b9a;--pur-bg:#f3e5f5;--pur-bd:#ab47bc;
+  --tel:#00838f;--tel-bg:#e0f7fa;--tel-bd:#26c6da;
+  --gry:#616161;--gry-bg:#f5f5f5;--gry-bd:#bdbdbd;
+  --ora:#e65100;--ora-bg:#fff3e0;--ora-bd:#ffa726;
+  --bg:#f0f2f5;--card:#fff;--border:#e0e0e0;--text:#1a1a1a;--muted:#777;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Arial,Helvetica,sans-serif;font-size:14px;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{background:var(--blue);color:#fff;padding:14px 16px}
+.hdr h1{font-size:15px;font-weight:700;line-height:1.3}
+.hdr p{font-size:11px;opacity:.8;margin-top:2px}
+.hdr .doc{font-size:10px;opacity:.6;margin-top:4px}
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;z-index:100}
+.trow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.toolbar select{font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;flex:1;min-width:100px}
+.tbtn{padding:8px 11px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.tbtn-pur{background:#5e35b1;color:#fff}
+.tbtn-ora{background:#f57c00;color:#fff}
+.tbtn-grn{background:var(--green);color:#fff}
+.tbtn-wa{background:#25d366;color:#fff}
+.tbtn-nav{background:#546e7a;color:#fff}
+.saved{font-size:11px;color:var(--green);font-weight:700;display:none;margin-left:4px}
+.saved.show{display:inline}
+.diisi-bar{background:#fff;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;display:none}
+.splash{position:fixed;inset:0;background:var(--blue);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
+.splash.hidden{display:none}
+.splash-card{background:#fff;border-radius:18px;padding:28px 24px;width:100%;max-width:360px;text-align:center}
+.splash-icon{font-size:48px;margin-bottom:8px}
+.splash-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px}
+.splash-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.splash-label{font-size:12px;font-weight:700;color:var(--muted);text-align:left;display:block;margin-bottom:6px}
+.splash-inp{width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:Arial;text-align:center;margin-bottom:16px}
+.splash-inp:focus{outline:none;border-color:var(--blue)}
+.splash-btn{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer}
+.splash-btn:disabled{background:#ccc;cursor:default}
+.splash-change{font-size:12px;color:var(--muted);margin-top:8px;cursor:pointer;text-decoration:underline;background:none;border:none;padding:0}
+.main-content{display:none}
+.main-content.show{display:block}
+.day-nav{display:flex;align-items:center;gap:8px;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px}
+.dnav-btn{width:38px;height:38px;border:1px solid var(--border);border-radius:8px;background:#fafafa;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dnav-btn:active{background:#eee}
+.dnav-info{flex:1;text-align:center}
+.dnav-name{font-size:17px;font-weight:800}
+.dnav-date{font-size:12px;color:var(--muted);margin-top:2px}
+.today-badge{display:inline-block;background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px}
+.stat{background:#fff;border-radius:10px;border:1px solid var(--border);padding:10px 4px;text-align:center}
+.stat-n{font-size:24px;font-weight:800;line-height:1}
+.stat-l{font-size:10px;color:var(--muted);margin-top:3px}
+.stat.h .stat-n{color:var(--green)}
+.stat.j .stat-n{color:var(--ylw)}
+.stat.a .stat-n{color:var(--red)}
+.stat.k .stat-n{color:var(--gry)}
+.send-bar{padding:0 12px 8px}
+.send-btn{width:100%;padding:13px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer}
+.send-btn:active{background:#1da851}
+.legend{display:flex;flex-wrap:wrap;gap:5px;padding:4px 12px 8px}
+.leg{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)}
+.leg-dot{width:11px;height:11px;border-radius:3px}
+.dlist{padding:0 12px 100px;display:flex;flex-direction:column;gap:6px}
+.drow-wrap{}
+.drow{background:#fff;border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:10px 12px;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.drow-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.avatar{width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.dinfo{flex:1;min-width:0}
+.dname{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsub{font-size:11px;color:var(--muted);margin-top:1px}
+.att-btn{width:54px;height:46px;border-radius:8px;border:1.5px solid var(--border);background:#fafafa;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.att-btn:active{filter:brightness(.9)}
+.att-btn.hadir{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
+.att-btn.jl{background:var(--ylw-bg);border-color:var(--ylw-bd);color:var(--ylw)}
+.att-btn.sakit{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
+.att-btn.izin{background:var(--blue-lt);border-color:#90caf9;color:var(--blue)}
+.att-btn.cuti{background:var(--pur-bg);border-color:var(--pur-bd);color:var(--pur)}
+.att-btn.dinas{background:var(--tel-bg);border-color:var(--tel-bd);color:var(--tel)}
+.att-btn.dipulang{background:var(--ora-bg);border-color:var(--ora-bd);color:var(--ora)}
+.att-btn.alpha{background:var(--gry-bg);border-color:var(--gry-bd);color:var(--gry)}
+.note-row{padding:0 12px 8px 58px;display:none}
+.note-row.show{display:block}
+.note-inp{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:Arial;color:var(--text);background:#fffde7;resize:none}
+.note-inp:focus{outline:none;border-color:#f9a825}
+.note-btn{width:40px;height:46px;border-radius:8px;border:1.5px solid var(--border);background:#fafafa;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.note-btn.has-note{border-color:#f9a825;background:#fffde7}
+.note-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:#f9a825;display:none}
+.note-btn.has-note .note-dot{display:block}
+.picker-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-end;justify-content:center}
+.picker-bg.open{display:flex}
+.picker-box{background:#fff;border-radius:16px 16px 0 0;padding:16px 16px 28px;width:100%;max-width:480px}
+.picker-title{font-size:13px;font-weight:700;margin-bottom:12px}
+.picker-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pick{padding:11px 8px;border-radius:8px;font-size:13px;font-weight:700;text-align:center;cursor:pointer;border:1.5px solid transparent}
+.pick:active{filter:brightness(.9)}
+.pick.hadir{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
+.pick.jl{background:var(--ylw-bg);border-color:var(--ylw-bd);color:var(--ylw)}
+.pick.sakit{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
+.pick.izin{background:var(--blue-lt);border-color:#90caf9;color:var(--blue)}
+.pick.cuti{background:var(--pur-bg);border-color:var(--pur-bd);color:var(--pur)}
+.pick.dinas{background:var(--tel-bg);border-color:var(--tel-bd);color:var(--tel)}
+.pick.dipulang{background:var(--ora-bg);border-color:var(--ora-bd);color:var(--ora)}
+.pick.alpha{background:var(--gry-bg);border-color:var(--gry-bd);color:var(--gry)}
+.pick.clear{background:#fff;border-color:#ddd;color:#999}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+.field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Arial}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue)}
+.mbtns{display:flex;gap:8px;margin-top:16px}
+.mbtns button{flex:1;padding:11px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.mbtn-p{background:var(--blue);color:#fff}
+.mbtn-c{background:#f0f0f0;color:#555}
+.merr{font-size:12px;color:var(--red);margin-top:8px;display:none}
+.uzone{border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;cursor:pointer;position:relative;background:#fafafa;transition:all .2s}
+.uzone:hover,.uzone:focus-within{border-color:var(--blue);background:var(--blue-lt)}
+.uzone.loaded{border-color:var(--green-bd);background:var(--green-bg);border-style:solid}
+.uzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uzone-icon{font-size:26px;margin-bottom:6px}
+.uzone-txt{font-size:12px;color:var(--muted)}
+.uzone.loaded .uzone-txt{color:var(--green);font-weight:700}
+.wa-pre{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:11px;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;font-family:monospace;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="splash-card">
+    <div class="splash-icon">🔧</div>
+    <div class="splash-title">Presensi Harian</div>
+    <div class="splash-sub">MEKANIK EXTRUDER & UTILITY</div>
+    <label class="splash-label">Nama Anda (Diisi Oleh)</label>
+    <input class="splash-inp" id="splashName" type="text" placeholder="Ketik nama Anda..."
+      onkeydown="if(event.key==='Enter')startApp()">
+    <button class="splash-btn" id="splashBtn" onclick="startApp()" disabled>Mulai →</button>
+    <br>
+    <button class="splash-change" id="splashReset" style="display:none" onclick="resetName()">Ganti nama</button>
+  </div>
+</div>
+
+<div class="main-content" id="mainContent">
+
+<div class="hdr">
+  <h1>PRESENSI HARIAN</h1>
+  <p>MEKANIK EXTRUDER & UTILITY</p>
+  <div class="doc">FM-HRGA-046 · Revisi 01 · 22–28 Juni 2026</div>
+</div>
+
+<div class="toolbar">
+  <div class="trow">
+    <select id="selJab" onchange="renderDaily()">
+      <option value="all">Semua Jabatan</option>
+    </select>
+    <span class="saved" id="savedBadge">✓</span>
+  </div>
+  <div class="trow">
+    <button class="tbtn tbtn-nav" onclick="resetName()" title="Ganti pengisi">✍️</button>
+    <button class="tbtn tbtn-pur" onclick="openUpload()">📂 Upload</button>
+    <button class="tbtn tbtn-ora" onclick="openAdd()">＋ Tambah</button>
+    <button class="tbtn tbtn-grn" onclick="exportXL()">⬇ Excel</button>
+    <button class="tbtn tbtn-wa" onclick="openWA()">📲 WA</button>
+  </div>
+</div>
+
+<div class="day-nav">
+  <button class="dnav-btn" onclick="navDay(-1)">‹</button>
+  <div class="dnav-info">
+    <div class="dnav-name" id="dnavName">–</div>
+    <div class="dnav-date" id="dnavDate">–</div>
+  </div>
+  <button class="dnav-btn" onclick="navDay(1)">›</button>
+</div>
+
+<div class="stats">
+  <div class="stat h"><div class="stat-n" id="sH">0</div><div class="stat-l">Hadir</div></div>
+  <div class="stat j"><div class="stat-n" id="sJL">0</div><div class="stat-l">JL</div></div>
+  <div class="stat a"><div class="stat-n" id="sA">0</div><div class="stat-l">Absen</div></div>
+  <div class="stat k"><div class="stat-n" id="sK">0</div><div class="stat-l">Belum</div></div>
+</div>
+
+<div class="send-bar">
+  <button class="send-btn" onclick="sendWANow()">📲 Kirim Laporan ke Grup WA</button>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#e8f5e9;border:1px solid #66bb6a"></div>H=Hadir</div>
+  <div class="leg"><div class="leg-dot" style="background:#fff8e1;border:1px solid #ffa726"></div>JL=Jatah Libur</div>
+  <div class="leg"><div class="leg-dot" style="background:#fce4ec;border:1px solid #ef5350"></div>S=Sakit</div>
+  <div class="leg"><div class="leg-dot" style="background:#e3f0ff;border:1px solid #90caf9"></div>I=Izin</div>
+  <div class="leg"><div class="leg-dot" style="background:#f3e5f5;border:1px solid #ab47bc"></div>C=Cuti</div>
+  <div class="leg"><div class="leg-dot" style="background:#e0f7fa;border:1px solid #26c6da"></div>DL=Diliburkan</div>
+  <div class="leg"><div class="leg-dot" style="background:#fff3e0;border:1px solid #ffa726"></div>DP=Dipulangkan</div>
+  <div class="leg"><div class="leg-dot" style="background:#f5f5f5;border:1px solid #bdbdbd"></div>A=Alpha</div>
+</div>
+
+<div class="dlist" id="dlist"></div>
+
+</div><!-- /main-content -->
+
+<!-- Picker -->
+<div class="picker-bg" id="picker" onclick="if(event.target===this)closePicker()">
+  <div class="picker-box">
+    <div class="picker-title" id="pickerTitle">Pilih Status</div>
+    <div class="picker-grid">
+      <div class="pick hadir"   onclick="setAtt('H')">✅ H – Hadir</div>
+      <div class="pick jl"      onclick="setAtt('JL')">🟡 JL – Jatah Libur</div>
+      <div class="pick sakit"   onclick="setAtt('S')">🔴 S – Sakit</div>
+      <div class="pick izin"    onclick="setAtt('I')">🔵 I – Izin</div>
+      <div class="pick cuti"    onclick="setAtt('C')">🟣 C – Cuti</div>
+      <div class="pick dinas"   onclick="setAtt('DL')">💼 DL – Diliburkan</div>
+      <div class="pick dipulang" onclick="setAtt('DP')">🔶 DP – Dipulangkan</div>
+      <div class="pick alpha"   onclick="setAtt('A')">⚫ A – Alpha</div>
+      <div class="pick clear"   onclick="setAtt('')">✕ Kosong</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeAdd()">
+  <div class="modal">
+    <h3 id="addTitle">＋ Tambah Karyawan</h3>
+    <div class="field"><label>Nama Lengkap *</label><input id="iName" placeholder="Nama karyawan"></div>
+    <div class="field"><label>No. Karyawan *</label><input id="iId" type="number" placeholder="Min 8 digit"></div>
+    <div class="field"><label>Jabatan *</label><input id="iJab" type="text" placeholder="Contoh: KABAG EX, MEKANIK EXTRUDER..."></div>
+    <div class="field"><label>Vendor</label>
+      <select id="iVendor"><option value="">–</option><option>DKP</option><option>DSM</option><option>MJM</option><option>TR</option></select>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn-c" onclick="closeAdd()">Batal</button>
+      <button class="mbtn-p" onclick="saveEmp()">Simpan</button>
+    </div>
+    <div class="merr" id="addErr"></div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-bg" id="upModal" onclick="if(event.target===this)closeUpload()">
+  <div class="modal">
+    <h3>📂 Upload Jadwal Baru</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Upload file Excel jadwal untuk memperbarui roster. Absensi yang sudah diisi tidak akan hilang.</p>
+    <div class="field">
+      <div class="uzone" id="uzone">
+        <input type="file" accept=".xlsx,.xls" onchange="handleUpload(this)">
+        <div class="uzone-icon">📊</div>
+        <div class="uzone-txt" id="uzoneTxt">Tap untuk pilih file</div>
+      </div>
+    </div>
+    <div id="upLog" style="font-size:12px;margin-top:8px;color:var(--muted);display:none"></div>
+    <div class="mbtns"><button class="mbtn-c" onclick="closeUpload()">Tutup</button></div>
+  </div>
+</div>
+
+<!-- WA Modal -->
+<div class="modal-bg" id="waModal" onclick="if(event.target===this)closeWA()">
+  <div class="modal">
+    <h3>📲 Kirim via WhatsApp</h3>
+    <div class="field"><label>Hari</label>
+      <select id="waDay" onchange="updateWAprev()">
+        <option value="today">Hari ini</option>
+        <option value="0">Senin, 22 Juni</option>
+<option value="1">Selasa, 23 Juni</option>
+<option value="2">Rabu, 24 Juni</option>
+<option value="3">Kamis, 25 Juni</option>
+<option value="4">Jum'at, 26 Juni</option>
+<option value="5">Sabtu, 27 Juni</option>
+<option value="6">Minggu, 28 Juni</option>
+        <option value="all">Semua Hari – Ringkasan Mingguan</option>
+      </select>
+    </div>
+    <div class="field"><label>No. WA Tujuan (opsional)</label>
+      <input id="waPhone" type="tel" placeholder="628123456789" oninput="updateWAprev()">
+    </div>
+    <div class="field"><label>Preview</label>
+      <div class="wa-pre" id="waPrev">...</div>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn-c" onclick="closeWA()">Batal</button>
+      <button class="mbtn-c" id="waCopyBtn" onclick="copyWA()">📋 Salin</button>
+      <button class="mbtn-p" style="background:#25d366" onclick="sendWAModal()">📲 Buka WA</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BAGIAN     = "MEKANIK EXTRUDER & UTILITY";
+const SHEET_KEY  = 'presensi_mekanik_extruder_utility_22jun';
+const DAYS       = ["Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu", "Minggu"];
+const DATES = ["22", "23", "24", "25", "26", "27", "28"];
+const DEFAULT_EMPS= [{"id": "21300317", "name": "Sudek Islian", "jabatan": "", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "1277131119", "name": "Widodo Arif Mardiyono", "jabatan": "KABAG EX", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "1735011122", "name": "Danang Pujiarto", "jabatan": "MEKANIK EXTRUDER", "vendor": "MJM", "att": ["", "", "", "", "", "", "JL"]}, {"id": "3404190824", "name": "Iwan Saputra", "jabatan": "MEKANIK EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "2573121023", "name": "Madarijun Naja", "jabatan": "MEKANIK EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0334190922", "name": "Mohamad Kholid Sazadi", "jabatan": "MEKANIK EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0311120922", "name": "Muhammad Nur Fauzy", "jabatan": "MEKANIK EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0310120922", "name": "Andika Saputro", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "1104220719", "name": "Arip Setyawan", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "3563170924", "name": "Imam Samsuri", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "4967220526", "name": "Suyadi", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "3550170924", "name": "Muhammad Habib Lutpi", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "3277270524", "name": "Paimo", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "3989170225", "name": "Doni Prasetyo", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "420090625", "name": "Dwi Joko Prasetyo", "jabatan": "MEKANIK WINDER EXTRUDER", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0335190922", "name": "Restu Suseno", "jabatan": "KABAG UT", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0068211020", "name": "Achmad Saroni", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "2975060524", "name": "Fajar Adi Prakoso", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "1137060821", "name": "Fitriya Dwi Suryanto", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "2600201123", "name": "Micho Army Syuqha", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0023140518", "name": "Petrus Aryo Kurnia Saputra", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "0127180821", "name": "Wandi", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "4221090625", "name": "Muhammad Sidik", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "4415110825", "name": "Edi Setyawan", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}, {"id": "2596111123", "name": "Ananda Aris Ramadhan", "jabatan": "MEKANIK UTILITY", "vendor": "DKP", "att": ["", "", "", "", "", "", "JL"]}];
+
+let emps = [], attState = {}, noteState = {}, diisiOleh = "", editId = null, curDayIdx = 0, pickerCtx = null;
+
+function loadState() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SHEET_KEY) || 'null');
+    if (d) { emps = d.emps || [...DEFAULT_EMPS]; attState = d.att || {}; noteState = d.notes || {}; }
+    else   { emps = [...DEFAULT_EMPS]; attState = {}; noteState = {}; }
+  } catch(e) { emps = [...DEFAULT_EMPS]; attState = {}; noteState = {}; }
+  DEFAULT_EMPS.forEach(e => { if (!attState[e.id]) attState[e.id] = [...e.att]; });
+  emps.forEach(e => { if (!attState[e.id]) attState[e.id] = new Array(7).fill(''); });
+  diisiOleh = localStorage.getItem(SHEET_KEY+'_diisi') || '';
+}
+
+function save() {
+  localStorage.setItem(SHEET_KEY, JSON.stringify({emps, att:attState, notes:noteState}));
+  const b = document.getElementById('savedBadge');
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 1400);
+}
+
+function attCls(code) {
+  const c = (code||'').toUpperCase();
+  return c==='H'?'hadir':c==='JL'?'jl':c==='S'?'sakit':c==='I'?'izin':c==='C'?'cuti':c==='DL'?'dinas':c==='DP'?'dipulang':c==='A'?'alpha':'';
+}
+function initials(n) { return (n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+function avatarBg(jab) {
+  jab = (jab||'').toUpperCase();
+  if(jab.includes('KABAG')) return '#1565c0';
+  if(jab.includes('MEKANIK')) return '#00695c';
+  return '#546e7a';
+}
+function todayIdx() { const d=new Date().getDate().toString(); const i=DATES.indexOf(d); return i>=0?i:0; }
+function visible() { const j=document.getElementById('selJab').value; return j==='all'?emps:emps.filter(e=>e.jabatan===j); }
+
+// ── Splash ─────────────────────────────────────────────────────────────
+function initSplash() {
+  const inp = document.getElementById('splashName');
+  inp.addEventListener('input', () => { document.getElementById('splashBtn').disabled = !inp.value.trim(); });
+  if (diisiOleh) {
+    inp.value = diisiOleh;
+    document.getElementById('splashBtn').disabled = false;
+    document.getElementById('splashReset').style.display = 'inline';
+    document.getElementById('splash').classList.add('hidden');
+    document.getElementById('mainContent').classList.add('show');
+    renderDaily();
+  }
+}
+function startApp() {
+  const name = document.getElementById('splashName').value.trim();
+  if (!name) return;
+  diisiOleh = name;
+  localStorage.setItem(SHEET_KEY+'_diisi', diisiOleh);
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('mainContent').classList.add('show');
+  const db = document.getElementById('splashReset');
+  if(db) db.style.display='inline';
+  renderDaily();
+}
+function resetName() {
+  document.getElementById('splash').classList.remove('hidden');
+  document.getElementById('mainContent').classList.remove('show');
+}
+
+// ── Render ─────────────────────────────────────────────────────────────
+function renderDaily() {
+  const di = curDayIdx;
+  const isToday = DATES[di] === new Date().getDate().toString();
+  document.getElementById('dnavName').innerHTML = DAYS[di].trim() + (isToday?'<span class="today-badge">Hari Ini</span>':'');
+  document.getElementById('dnavDate').textContent = DATES[di] + ' Juni 2026';
+
+  const jabs = [...new Set(emps.map(e=>e.jabatan).filter(Boolean))].sort();
+  const sel = document.getElementById('selJab'); const curJab = sel.value;
+  sel.innerHTML = '<option value="all">Semua Jabatan</option>' + jabs.map(j=>`<option value="${j}"${j===curJab?' selected':''}>${j}</option>`).join('');
+
+  const vis = visible();
+  const h  = vis.filter(e=>(attState[e.id]||[])[di]?.toUpperCase()==='H').length;
+  const jl = vis.filter(e=>(attState[e.id]||[])[di]?.toUpperCase()==='JL').length;
+  const ab = vis.filter(e=>{const v=(attState[e.id]||[])[di]?.toUpperCase();return v&&v!=='H'&&v!=='JL';}).length;
+  const kos= vis.filter(e=>!((attState[e.id]||[])[di]||'').trim()).length;
+  document.getElementById('sH').textContent  = h;
+  document.getElementById('sJL').textContent = jl;
+  document.getElementById('sA').textContent  = ab;
+  document.getElementById('sK').textContent  = kos;
+
+  document.getElementById('dlist').innerHTML = vis.length ? vis.map(emp => {
+    const code = (attState[emp.id]||[])[di] || '';
+    const cls  = attCls(code);
+    const note = (noteState[emp.id]||{})[di] || '';
+    const hasNote = note.trim().length > 0;
+    return `<div class="drow-wrap" id="wrap-${emp.id}-${di}">
+      <div class="drow">
+        <div class="drow-left">
+          <div class="avatar" style="background:${avatarBg(emp.jabatan)}">${initials(emp.name)}</div>
+          <div class="dinfo">
+            <div class="dname">${emp.name}</div>
+            <div class="dsub">${emp.jabatan||'–'}${emp.vendor?' · '+emp.vendor:''} · ${emp.id}</div>
+          </div>
+        </div>
+        <button class="att-btn ${cls}" onclick="openPicker('${emp.id}',${di})">${code||'–'}</button>
+        <button class="note-btn ${hasNote?'has-note':''}" onclick="toggleNote('${emp.id}',${di})">📝<div class="note-dot"></div></button>
+      </div>
+      <div class="note-row ${hasNote?'show':''}" id="note-${emp.id}-${di}">
+        <textarea class="note-inp" rows="2" placeholder="Tulis catatan..."
+          onchange="saveNote('${emp.id}',${di},this.value)"
+          oninput="saveNote('${emp.id}',${di},this.value)"
+        >${note}</textarea>
+      </div>
+    </div>`;
+  }).join('') : '<div style="padding:30px;text-align:center;color:var(--muted)">Tidak ada karyawan</div>';
+}
+
+function navDay(dir) { curDayIdx=Math.max(0,Math.min(DATES.length-1,curDayIdx+dir)); renderDaily(); }
+
+// ── Notes ──────────────────────────────────────────────────────────────
+function toggleNote(empId, di) {
+  const nr = document.getElementById('note-'+empId+'-'+di);
+  if(nr){ nr.classList.toggle('show'); if(nr.classList.contains('show')) nr.querySelector('textarea').focus(); }
+}
+function saveNote(empId, di, val) {
+  if(!noteState[empId]) noteState[empId]={};
+  noteState[empId][di]=val; save();
+  const btn=document.querySelector('#wrap-'+empId+'-'+di+' .note-btn');
+  if(btn) btn.className='note-btn'+(val.trim()?' has-note':'');
+}
+
+// ── Picker ─────────────────────────────────────────────────────────────
+function openPicker(empId, di) {
+  pickerCtx={empId,di};
+  const emp=emps.find(e=>e.id===empId);
+  document.getElementById('pickerTitle').textContent=(emp?.name.split(' ')[0]||'')+' · '+DAYS[di].trim()+' '+DATES[di]+'/6';
+  document.getElementById('picker').classList.add('open');
+}
+function closePicker(){ document.getElementById('picker').classList.remove('open'); pickerCtx=null; }
+function setAtt(code) {
+  if(!pickerCtx) return;
+  const {empId,di}=pickerCtx;
+  if(!attState[empId]) attState[empId]=new Array(7).fill('');
+  attState[empId][di]=code; save(); closePicker(); renderDaily();
+}
+
+// ── Add / Edit ─────────────────────────────────────────────────────────
+function openAdd(id) {
+  editId=id||null;
+  const emp=id?emps.find(e=>e.id===id):null;
+  document.getElementById('addTitle').textContent=emp?'✏️ Edit Karyawan':'＋ Tambah Karyawan';
+  document.getElementById('iName').value=emp?.name||'';
+  document.getElementById('iId').value=emp?.id||'';
+  document.getElementById('iJab').value=emp?.jabatan||'';
+  document.getElementById('iVendor').value=emp?.vendor||'';
+  document.getElementById('addErr').style.display='none';
+  document.getElementById('addModal').classList.add('open');
+}
+function closeAdd(){ document.getElementById('addModal').classList.remove('open'); editId=null; }
+function saveEmp() {
+  const name=document.getElementById('iName').value.trim();
+  const id=document.getElementById('iId').value.trim();
+  const jab=document.getElementById('iJab').value.trim();
+  const vendor=document.getElementById('iVendor').value;
+  const errEl=document.getElementById('addErr');
+  if(!name){errEl.textContent='Nama wajib diisi';errEl.style.display='block';return;}
+  if(!id||id.length<8){errEl.textContent='No. karyawan min 8 digit';errEl.style.display='block';return;}
+  if(!jab){errEl.textContent='Jabatan wajib diisi';errEl.style.display='block';return;}
+  if(editId){
+    const idx=emps.findIndex(e=>e.id===editId);
+    if(idx>=0){
+      if(id!==editId){attState[id]=attState[editId]||new Array(7).fill('');delete attState[editId];}
+      emps[idx]={id,name,jabatan:jab,vendor,att:emps[idx].att||[]};
+    }
+  } else {
+    if(emps.find(e=>e.id===id)){errEl.textContent='No. karyawan sudah ada';errEl.style.display='block';return;}
+    emps.push({id,name,jabatan:jab,vendor,att:new Array(7).fill('')});
+    attState[id]=new Array(7).fill('');
+  }
+  save(); closeAdd(); renderDaily();
+}
+
+// ── Upload ─────────────────────────────────────────────────────────────
+function openUpload(){ document.getElementById('uzone').classList.remove('loaded'); document.getElementById('uzoneTxt').textContent='Tap untuk pilih file'; document.getElementById('upLog').style.display='none'; document.getElementById('upModal').classList.add('open'); }
+function closeUpload(){ document.getElementById('upModal').classList.remove('open'); }
+function handleUpload(input) {
+  const file=input.files[0]; if(!file) return;
+  const log=document.getElementById('upLog'); log.style.display='block'; log.textContent='⏳ Membaca...';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1});
+      let curJab='',found=0,newEmps=[],newAtt={};
+      raw.forEach((row,ri)=>{
+        if(ri<8) return;
+        const empId=String(row[2]||'').trim().replace(/\.0$/,'');
+        const grp=String(row[1]||'').trim().replace(/\n/g,' ');
+        const nameR=String(row[3]||'').trim();
+        if(grp&&!['CAD','BACK UP','ALOKASI'].includes(grp)) curJab=grp;
+        if(!/^\d{8,}$/.test(empId)||!nameR||nameR==='nan') return;
+        const np=nameR.split(' '); let vendor='',name=nameR;
+        if(['DKP','DSM','MJM','TR'].includes(np[np.length-1])){vendor=np.pop();name=np.join(' ');}
+        const att=[]; for(let c=4;c<11;c++){const v=String(row[c]||'').trim();att.push(v==='nan'?'':v);}
+        newEmps.push({id:empId,name,jabatan:curJab,vendor,att});
+        newAtt[empId]=attState[empId]||att; found++;
+      });
+      if(!found){log.textContent='⚠️ Tidak ada data ditemukan';return;}
+      emps=newEmps; attState=newAtt; save(); renderDaily();
+      document.getElementById('uzone').classList.add('loaded');
+      document.getElementById('uzoneTxt').textContent='✓ '+found+' karyawan dimuat';
+      log.textContent='✅ '+found+' karyawan berhasil dimuat.';
+    } catch(err){log.textContent='❌ Error: '+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Excel Export ───────────────────────────────────────────────────────
+function exportXL() {
+  const rows=[['No','No. Karyawan','Nama','Jabatan','Vendor','Bagian','Diisi Oleh',...DAYS.map((d,i)=>d.trim()+' '+DATES[i]),'Total Hadir','Catatan']];
+  emps.forEach((emp,idx)=>{
+    const att=attState[emp.id]||new Array(7).fill('');
+    const vals=DATES.map((_,i)=>att[i]||'');
+    const tot=vals.filter(v=>v.toUpperCase()==='H').length;
+    const empNotes=DATES.map((_,i)=>{const n=(noteState[emp.id]||{})[i]||'';return n?DAYS[i].trim()+' '+DATES[i]+': '+n:'';}).filter(Boolean).join('; ');
+    rows.push([idx+1,emp.id,emp.name,emp.jabatan||'',emp.vendor||'',BAGIAN,diisiOleh,...vals,tot||'',empNotes]);
+  });
+  const sums=DATES.map((_,i)=>emps.filter(e=>(attState[e.id]||[])[i]?.toUpperCase()==='H').length);
+  rows.push(['','','TOTAL HADIR','','','','',...sums,'','']);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:4},{wch:12},{wch:28},{wch:22},{wch:6},{wch:28},{wch:18},...DATES.map(()=>({wch:9})),{wch:10},{wch:40}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Presensi');
+  XLSX.writeFile(wb,'Presensi_MekanikExtruderUtility_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.xlsx');
+}
+
+// ── WhatsApp ───────────────────────────────────────────────────────────
+function buildMsg(di_arg) {
+  const vis=visible();
+  const now=new Date().toLocaleString('id-ID',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const SEP='────────────────────────────────';
+  if(di_arg==='all'){
+    const lines=['📋 *REKAP PRESENSI MINGGUAN*','🏭 Bagian: '+BAGIAN,'📅 Periode: 22–28 Juni 2026','✍️ Diisi oleh: '+(diisiOleh||'–'),SEP];
+    DATES.forEach((_,i)=>{
+      const h=vis.filter(e=>(attState[e.id]||[])[i]?.toUpperCase()==='H').length;
+      const jl=vis.filter(e=>(attState[e.id]||[])[i]?.toUpperCase()==='JL').length;
+      const ab=vis.filter(e=>{const v=(attState[e.id]||[])[i]?.toUpperCase();return v&&v!=='H'&&v!=='JL';}).length;
+      lines.push('*'+DAYS[i].trim()+' '+DATES[i]+'/6* — H:'+h+' JL:'+jl+(ab>0?' ⚠️'+ab:''));
+    });
+    lines.push(SEP,'Total terdaftar: '+vis.length,'⏰ '+now);
+    return lines.join('\n');
+  }
+  const d=parseInt(di_arg);
+  const hadir =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='H');
+  const jl    =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='JL');
+  const sakit =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='S');
+  const izin  =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='I');
+  const cuti  =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='C');
+  const dinas =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='DL');
+  const dipulang=vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='DP');
+  const alpha =vis.filter(e=>(attState[e.id]||[])[d]?.toUpperCase()==='A');
+  const kosong=vis.filter(e=>!((attState[e.id]||[])[d]||'').trim());
+  const lines=['📋 *LAPORAN PRESENSI HARIAN*','🏭 Bagian: '+BAGIAN,'📅 '+DAYS[d].trim()+', '+DATES[d]+' Juni 2026','✍️ Diisi oleh: '+(diisiOleh||'–'),SEP,'✅ Hadir: *'+hadir.length+'* dari '+vis.length+' orang'];
+  if(jl.length)      lines.push('🟡 Jatah Libur (JL): '+jl.length);
+  if(sakit.length)   lines.push('🔴 Sakit (S): '+sakit.length);
+  if(izin.length)    lines.push('🔵 Izin (I): '+izin.length);
+  if(cuti.length)    lines.push('🟣 Cuti (C): '+cuti.length);
+  if(dinas.length)   lines.push('💼 Diliburkan (DL): '+dinas.length);
+  if(dipulang.length)lines.push('🔶 Dipulangkan (DP): '+dipulang.length);
+  if(alpha.length)   lines.push('⚫ Alpha (A): '+alpha.length);
+  if(kosong.length)  lines.push('⬜ Belum diisi: '+kosong.length);
+  lines.push(SEP,'✅ *Daftar Hadir:*');
+  if(hadir.length) hadir.forEach((e,i)=>{const note=(noteState[e.id]||{})[d]||'';lines.push((i+1)+'. '+e.name+' – '+(e.jabatan||'')+(note?' ('+note+')':''));});
+  else lines.push('(tidak ada)');
+  const notH=[...sakit.map(e=>({e,code:'S'})),...izin.map(e=>({e,code:'I'})),...cuti.map(e=>({e,code:'C'})),...dinas.map(e=>({e,code:'DL'})),...dipulang.map(e=>({e,code:'DP'})),...alpha.map(e=>({e,code:'A'}))];
+  if(notH.length){lines.push(SEP,'⚠️ *Tidak Hadir:*');notH.forEach(({e,code})=>{const note=(noteState[e.id]||{})[d]||'';lines.push('• '+e.name+' – '+(e.jabatan||'')+' ('+code+')'+(note?' → '+note:''));});}
+  if(jl.length){lines.push(SEP,'🟡 *Jatah Libur:*');jl.forEach(e=>lines.push('• '+e.name+' – '+(e.jabatan||'')));}
+  if(kosong.length){lines.push(SEP,'⬜ *Belum Diisi:*');kosong.forEach(e=>lines.push('• '+e.name+' – '+(e.jabatan||'')));}
+  lines.push(SEP,'⏰ Dikirim: '+now);
+  return lines.join('\n');
+}
+function getWADay(){const v=document.getElementById('waDay').value;return v==='today'?String(curDayIdx):v;}
+function updateWAprev(){document.getElementById('waPrev').textContent=buildMsg(getWADay());}
+function openWA(){document.getElementById('waDay').value='today';updateWAprev();document.getElementById('waModal').classList.add('open');}
+function closeWA(){document.getElementById('waModal').classList.remove('open');}
+function sendWAModal(){const msg=buildMsg(getWADay());const ph=(document.getElementById('waPhone').value||'').replace(/\D/g,'');window.open(ph?'https://wa.me/'+ph+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank');}
+function copyWA(){navigator.clipboard.writeText(buildMsg(getWADay())).then(()=>{document.getElementById('waCopyBtn').textContent='✓ Tersalin!';setTimeout(()=>document.getElementById('waCopyBtn').textContent='📋 Salin',1800);}).catch(()=>{const ta=document.createElement('textarea');ta.value=buildMsg(getWADay());ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});}
+function sendWANow(){window.open('https://wa.me/?text='+encodeURIComponent(buildMsg(String(curDayIdx))),'_blank');}
+
+// ── Init ───────────────────────────────────────────────────────────────
+loadState();
+curDayIdx=todayIdx();
+initSplash();
+</script>
+</body>
+</html>
